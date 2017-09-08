@@ -1,11 +1,12 @@
-import traceback
 from urllib.request import urlopen, Request
 from urllib.parse import quote
 from mimetypes import guess_extension
 import os
 import sys
+import numpy as np
 from bs4 import BeautifulSoup
 from time import time, sleep
+from facer import Facer
 
 MY_UA = ''
 
@@ -17,7 +18,7 @@ class Fetcher:
     def __init__(self, ua=''):
         self.ua = ua
 
-    def fetch(self, url, ):
+    def fetch(self, url):
         req = Request(url, headers={'User-Agent': self.ua})
         try:
             with urlopen(req, timeout=3) as p:
@@ -25,13 +26,12 @@ class Fetcher:
                 mime = p.getheader('Content-Type')
         except:
             sys.stderr.write('Error in fetching :'+ format(url))
-            sys.stderr.write(traceback.format_exc())
 
             return None, None
 
         return content, mime
 
-fetcher = Fetcher(MY_UA)
+
 
 
 
@@ -53,13 +53,15 @@ def url_search(word, n):
     return img_urls
 
 
-def image_collector_in_url(urls,fname):
+def image_collector_in_url(urls,fname,command):
     '''
     取得したURL群をfetchし画像ダウンロード
     :param urls:  画像の存在するURL
     :param fname: 作成されるフォルダの名前
+    :param command: 顔の編集モード指定番号
     :return: ダウンロードに成功した数
     '''
+
     dir = 'img/'+str(fname)
     scount = 0
     if not os.path.exists(dir):
@@ -77,20 +79,39 @@ def image_collector_in_url(urls,fname):
                 elif not ext:
                     continue
             except:
-                print('Error in converting extension ¥n URL:{}').format(str(url))
+                print('Error in converting extension')
                 continue
             file = os.path.join(dir, str(i) + ext)
-            with open(file, mode='wb') as f:
-                f.write(img)
-            print('ダウンロード成功 URL:'+str(url))
-            scount += 1
+            command_dict = {
+                0: (lambda encode: facer.draw_rect(encode)),
+                1: (lambda encode: facer.cut_face(encode))
+            }
+            #顔編集実行
+            if command in command_dict.keys():
+                encode = np.asarray(bytearray(img), dtype=np.uint8)
+                img = command_dict[command](encode)
+                facer.save_img(img, file)
+                print('ダウンロード成功 URL:'+str(url))
+                scount += 1
+            else:
+                with open(file, mode='wb') as f:
+                    f.write(img)
+                print('ダウンロード成功 URL:'+str(url))
+                scount += 1
+
         return scount
 
 if __name__ == '__main__':
+
+    fetcher = Fetcher(MY_UA)
+    facer = Facer('haarcascade_frontalface_alt.xml')
+
     print('欲しい画像のキーワードを入力してください')
     keyword = input('>> ')
     print('枚数を入力してください')
     get_num = int(input('>> '))
+    print('顔の編集モードを指定してください　輪郭描画:0　顔のみ切り出し:1　編集なし:2')
+    command = int(input('>> '))
     image_urls = url_search(keyword, get_num)
-    download_count = image_collector_in_url(image_urls, keyword)
+    download_count = image_collector_in_url(image_urls, keyword, command)
     print(str(download_count)+'件の画像の収集に成功しました')
