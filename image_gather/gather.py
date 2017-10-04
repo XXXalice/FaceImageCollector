@@ -12,7 +12,6 @@ MY_UA = ''
 
 class Fetcher:
     '''
-    ua = ユーザーエージェント
     受け取ったurlを指定されたuaでリクエストし、html、MIMEタイプとエンコード（Content-Type）を貰う
     '''
     def __init__(self, ua=''):
@@ -25,15 +24,11 @@ class Fetcher:
                 content = p.read()
                 mime = p.getheader('Content-Type')
         except:
-            sys.stderr.write('Error in fetching :'+ format(url))
+            sys.stderr.write('Error in fetching :'+ format(url) + "\n")
 
             return None, None
 
         return content, mime
-
-
-
-
 
 def url_search(word, n):
     '''
@@ -43,15 +38,28 @@ def url_search(word, n):
     :return: 画像のURL群　これをpcのフォルダにDLして終わり
     '''
     code = '&ei=UTF-8'
-    url = ('http://image.search.yahoo.co.jp/search?n={}&p={}'+code).format(n, quote(word))
+
+    if n >= 61:
+        extra_n = n - 60
+        n = 60
+
+    url = ('https://search.yahoo.co.jp/image/search?n={}&p={}'+code).format(n, quote(word))
     byte_content, mime = fetcher.fetch(url)
     soup = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
     img_link_elem = soup.find_all('a', attrs={'target': 'imagewin'})
+
+    if extra_n:
+        url2 = ('https://search.yahoo.co.jp/image/search?n={}&p={}2' + code).format(extra_n, quote(word))
+        byte_content, mime = fetcher.fetch(url2)
+        soup2 = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
+        img_link_elem2 = soup2.find_all('a', attrs={'target': 'imagewin'})
+        img_link_elem.extend(img_link_elem2)
+
     img_urls = [e.get('href') for e in img_link_elem if e.get('href').startswith('http')]
-    #重複を取るテク
+
+    #重複を取り除くテク
     img_urls = list(set(img_urls))
     return img_urls
-
 
 def image_collector_in_url(urls,fname,command):
     '''
@@ -74,7 +82,7 @@ def image_collector_in_url(urls,fname,command):
                 continue
             try:
                 ext = guess_extension(mime.split(';')[0])
-                if ext in ('.jpe', '.jpg', '.png'):
+                if ext in ('.jpeg', '.jpg', '.png', '.jpe'):
                     ext = '.png'
                 elif not ext:
                     continue
@@ -113,5 +121,7 @@ if __name__ == '__main__':
     print('顔の編集モードを指定してください　輪郭描画:0　顔のみ切り出し:1　編集なし:2')
     command = int(input('>> '))
     image_urls = url_search(keyword, get_num)
+    print(image_urls)
+    print(str(len(image_urls))+'枚の画像URLの取得に成功しました')
     download_count = image_collector_in_url(image_urls, keyword, command)
     print(str(download_count)+'件の画像の収集に成功しました')

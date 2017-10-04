@@ -1,4 +1,3 @@
-#画像を受け取り顔関連のことをするクラス
 
 import cv2
 import sys
@@ -23,18 +22,25 @@ class Facer:
 
     def cut_face(self, encode):
         img_raw = self.decode_img_for_cv(encode)
-        gray = cv2.cvtColor(img_raw, cv2.COLOR_BGR2GRAY)
-        face = self.classifier.detectMultiScale(gray, 1.11, 3)
-        if len(face) > 0:
-            x, y, w, h = face[0]
-            cropd = img_raw[x:x+w, y:y+h]
-            return cropd
-        else:
-            sys.stdout.write('(no face) ')
+        try:
+            gray = cv2.cvtColor(img_raw, cv2.COLOR_BGR2GRAY)
+            face = self.classifier.detectMultiScale(gray, 1.11, 3)
+            if len(face) > 0:
+                x, y, w, h = face[0]
+                cropd = img_raw[y:y+h, x:x+w]
+                return cropd
+            else:
+                sys.stdout.write('(no face) ')
+                return img_raw
+        except:
+            sys.stdout.write('(CV error) ')
             return img_raw
 
     def decode_img_for_cv(self, encode):
         return cv2.imdecode(encode, -1)
 
     def save_img(self, img, file):
-        cv2.imwrite(file, img)
+        try:
+            cv2.imwrite(file, img)
+        except:
+            sys.stdout.write('(Error in image saving) ')
