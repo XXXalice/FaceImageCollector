@@ -39,6 +39,8 @@ def url_search(word, n):
     '''
     code = '&ei=UTF-8'
 
+    extra_n = 0
+
     if n >= 61:
         extra_n = n - 60
         n = 60
@@ -48,7 +50,7 @@ def url_search(word, n):
     soup = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
     img_link_elem = soup.find_all('a', attrs={'target': 'imagewin'})
 
-    if extra_n:
+    if extra_n != 0:
         url2 = ('https://search.yahoo.co.jp/image/search?n={}&p={}2' + code).format(extra_n, quote(word))
         byte_content, mime = fetcher.fetch(url2)
         soup2 = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
