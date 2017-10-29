@@ -16,8 +16,8 @@
 !/templateLanguages.xml
 !/vcs.xml
 
-!/image_gather/img
-!/image_renamer/img
-!/txt_maker/img
+image_gather/img
+image_renamer/img
+txt_maker/img
 
 __pycache__/
