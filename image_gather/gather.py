@@ -38,24 +38,34 @@ def url_search(word, n):
     :return: 画像のURL群　これをpcのフォルダにDLして終わり
     '''
     code = '&ei=UTF-8'
+    #URLの受け皿
+    img_link_elem = []
 
-    extra_n = 0
 
-    if n >= 61:
-        extra_n = n - 60
-        n = 60
+    if n > 60:
+        iter_num = int(n / 60)
+        rem = n % 60
+        print(iter_num)
 
-    url = ('https://search.yahoo.co.jp/image/search?n={}&p={}'+code).format(n, quote(word))
-    byte_content, mime = fetcher.fetch(url)
-    soup = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
-    img_link_elem = soup.find_all('a', attrs={'target': 'imagewin'})
-
-    if extra_n != 0:
-        url2 = ('https://search.yahoo.co.jp/image/search?n={}&p={}2' + code).format(extra_n, quote(word))
-        byte_content, mime = fetcher.fetch(url2)
-        soup2 = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
-        img_link_elem2 = soup2.find_all('a', attrs={'target': 'imagewin'})
-        img_link_elem.extend(img_link_elem2)
+    if not 'iter_num' in locals():
+        url = ('https://search.yahoo.co.jp/image/search?n={}&p={}'+code).format(n, quote(word))
+        byte_content, mime = fetcher.fetch(url)
+        soup = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
+        elem = soup.find_all('a', attrs={'target': 'imagewin'})
+        img_link_elem.extend(elem)
+    else:
+        for i in range(2,iter_num+2):
+            url = ('https://search.yahoo.co.jp/image/search?n=60&p={}{}' + code).format(quote(word), i)
+            byte_content, mime = fetcher.fetch(url)
+            soup = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
+            elem = soup.find_all('a', attrs={'target': 'imagewin'})
+            img_link_elem.extend(elem)
+        if rem != 0:
+            url = ('https://search.yahoo.co.jp/image/search?n={}&p={}').format(rem, quote(word))
+            byte_content, mime = fetcher.fetch(url)
+            soup = BeautifulSoup(byte_content.decode('UTF-8'), 'html.parser')
+            add_elem = soup.find_all('a', attrs={'target': 'imagewin'})
+            img_link_elem.extend(add_elem)
 
     img_urls = [e.get('href') for e in img_link_elem if e.get('href').startswith('http')]
 
@@ -123,7 +133,6 @@ if __name__ == '__main__':
     print('顔の編集モードを指定してください　輪郭描画:0　顔のみ切り出し:1　編集なし:2')
     command = int(input('>> '))
     image_urls = url_search(keyword, get_num)
-    print(image_urls)
     print(str(len(image_urls))+'枚の画像URLの取得に成功しました')
     download_count = image_collector_in_url(image_urls, keyword, command)
     print(str(download_count)+'件の画像の収集に成功しました')
